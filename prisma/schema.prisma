@@ -21,53 +21,26 @@ model User {
     role          String    @default("USER") // Using string instead of enum
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
-    accounts      Account[]
-    sessions      Session[]
     tokens        Token[]
 }
 
-model Account {
-    id                String  @id @default(auto()) @map("_id") @db.ObjectId
-    userId            String  @db.ObjectId
-    type              String
-    provider          String
-    providerAccountId String
-    refresh_token     String? @db.String
-    access_token      String? @db.String
-    expires_at        Int?
-    token_type        String?
-    scope             String?
-    id_token          String? @db.String
-    session_state     String?
-
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    @@unique([provider, providerAccountId])
-}
-
-model Session {
-    id           String   @id @default(auto()) @map("_id") @db.ObjectId
-    sessionToken String   @unique
-    userId       String   @db.ObjectId
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
 model Token {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    token     String   @unique
-    expires   DateTime
-    userId    String   @db.ObjectId
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    createdAt DateTime @default(now())
-    type      String // "RESET_PASSWORD", "VERIFY_EMAIL", etc.
-}
+    id           String   @id @default(auto()) @map("_id") @db.ObjectId
+    token        String   @unique // The actual token string
+    refreshToken String? // Optional refresh token for token rotation
+    expires      DateTime // When the token expires
+    userId       String   @db.ObjectId
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    type         String // "ACCESS", "REFRESH", "RESET_PASSWORD", "VERIFY_EMAIL", etc.
 
-model VerificationToken {
-    id         String   @id @default(auto()) @map("_id") @db.ObjectId
-    identifier String
-    token      String   @unique
-    expires    DateTime
+    // Additional fields for token management
+    lastUsed  DateTime? // Track when the token was last used
+    revoked   Boolean   @default(false) // Flag to mark if token has been revoked
+    userAgent String? // Store user agent information for security
+    ipAddress String? // Store IP address for security
 
-    @@unique([identifier, token])
+    @@index([userId])
+    @@index([type])
 }
