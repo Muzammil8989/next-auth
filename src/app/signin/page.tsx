@@ -26,11 +26,13 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setShowResendVerification(false);
 
     try {
       const result = await signIn("credentials", {
@@ -40,7 +42,12 @@ export default function SignIn() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        if (result.error === "EMAIL_NOT_VERIFIED") {
+          setError("Please verify your email before signing in.");
+          setShowResendVerification(true);
+        } else {
+          setError("Invalid email or password");
+        }
         setIsLoading(false);
         return;
       }
@@ -49,6 +56,32 @@ export default function SignIn() {
       router.refresh();
     } catch (error) {
       setError("Something went wrong. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setError("Verification email sent. Please check your inbox.");
+        setShowResendVerification(false);
+      } else {
+        setError(data.message || "Failed to resend verification email.");
+      }
+    } catch (error) {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -65,7 +98,9 @@ export default function SignIn() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
-              <Alert variant="destructive">
+              <Alert
+                variant={showResendVerification ? "default" : "destructive"}
+              >
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -98,10 +133,28 @@ export default function SignIn() {
                 required
               />
             </div>
+            {showResendVerification && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleResendVerification}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Resend verification email"
+                )}
+              </Button>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
+              {isLoading && !showResendVerification ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Signing in...
