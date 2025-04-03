@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -19,6 +18,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 
+import { useToast } from "@/components/ui/sonner"; // Import Toaster from sonner
+
 export default function SignUp() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -26,6 +27,7 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast(); // Initialize toast from sonner
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,32 +53,29 @@ export default function SignUp() {
         throw new Error(data.message || "Something went wrong");
       }
 
-      // Sign in the user after successful registration
-      await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+      // Show success toast
+      toast("Please verify your email.", {
+        description: "Account created successfully!",
       });
 
-      router.push("/dashboard");
-      router.refresh();
+      // Clear the form
+      setName("");
+      setEmail("");
+      setPassword("");
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
       } else {
         setError("Something went wrong. Please try again.");
       }
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
+      <Toaster /> {/* Add the Toaster component here */}
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Sign Up</CardTitle>
