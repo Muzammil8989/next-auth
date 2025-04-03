@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 import type { UserRole } from "@/types/db";
+import InstagramProvider from "next-auth/providers/instagram";
 
 // Define the session max age (30 days)
 const MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
@@ -70,6 +71,11 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+    // ...other providers
+    InstagramProvider({
+      clientId: process.env.INSTAGRAM_CLIENT_ID,
+      clientSecret: process.env.INSTAGRAM_CLIENT_SECRET
+    })
   ],
   callbacks: {
     // JWT callback is called whenever a JWT is created or updated
